@@ -30,8 +30,9 @@ template.innerHTML = `
     Variation du volume: <webaudio-knob id="knobVolume" tooltip="Volume:%s" src="./assets/imgs/bouton2.png" sprites="127" value=1 min="0" max="1" step=0.01>
         Volume</webaudio-knob>
         Variation de la balance: 
-        <webaudio-knob id="knobVolume2" tooltip="Volume:%s" src="./assets/imgs/bouton2.png" sprites="127" value=1 min="0" max="1" step=0.01>
+        <webaudio-knob id="knobVolume2" tooltip="Volume:%s" src="./assets/imgs/bouton2.png" sprites="127" value=0.5 min="0" max="1" step=0.01>
         Volume</webaudio-knob>
+        <input type="button" id="razBalance" value="Reset la balance g/d"/>
         <br>
         <canvas id="viSual" height="400" width="800"></canvas>
         `;
@@ -65,6 +66,7 @@ class MyAudioPlayer extends HTMLElement {
     this.source.connect(this.audioContext.destination);
     this.datas = new Uint8Array(this.analyserNode.frequencyBinCount);
     //this.analyserNode.getByteFrequencyData(this.datas);
+    this.stereoNode = new StereoPannerNode(this.audioContext, { pan: 0 });
     this.loopingFunction();
   }
 
@@ -122,6 +124,9 @@ class MyAudioPlayer extends HTMLElement {
     this.shadowRoot.querySelector("#slideVolume").addEventListener("input", (event) => {
       this.setVolume(event.target.value);
     });
+    this.shadowRoot.querySelector("#razBalance").addEventListener("click", (event) => {
+      this.resetBalance();
+    });
     this.shadowRoot
       .querySelector("#knobVolume")
       .addEventListener("input", (event) => {
@@ -135,12 +140,18 @@ class MyAudioPlayer extends HTMLElement {
   }
   
   // API
+
+  resetBalance(){
+    this.stereoNode.pan.value = 0;
+    this.shadowRoot.querySelector("#knobVolume2").value = 0.5;
+  }
   leftRight(value){
-    const stereoNode = new StereoPannerNode(this.audioContext, { pan: 0 });
+    
 
     // change the value of the balance by updating the pan value
-    stereoNode.pan.value = value == 0.5 ? 0 : value > 0.5 ? 1 : -1;
-    this.source.connect(stereoNode).connect(this.audioContext.destination);
+    this.stereoNode.pan.value = value < 0.3 ? -1 : value > 0.7 ? 1 : 0;
+    console.log(this.stereoNode.pan.value);
+    this.source.connect(this.stereoNode).connect(this.audioContext.destination);
   }
 
   setVolume(val) {
